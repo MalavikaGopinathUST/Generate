@@ -1,0 +1,137 @@
+﻿@{
+    ViewBag.Title = "Admin";
+}
+<style>
+    canvas {
+        width: 700px !important;
+        height: 300px !important;
+    }
+
+    .jumbotron {
+        width: 800px;
+        height: 520px;
+        position: relative;
+        background-color: lavender;
+    }
+
+    #tileTitle {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        color: darkblue;
+        font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        font-size: larger;
+    }
+
+    thead {
+        text-align: center;
+        background-color: darkblue;
+        color: white;
+    }
+
+    tbody {
+        background-color: lightcyan;
+        text-align: center;
+    }
+</style>
+<script src="~/Scripts/Chart.min.js"></script>
+<br />
+<div class="jumbotron col-md-8">
+    <div id="tileTitle"><p>Request Summary</p></div>
+    <canvas id="bar-chart"></canvas>
+    <br />
+    <table class="table table-bordered ">
+        <thead>
+            <tr>
+                <th>Not Started</th>
+                <th>In Progress</th>
+                <th>Completed</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td> </td>
+                <td> </td>
+                <td> </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    var xValues = ["LoanCare", "Carrignton", "Loancare2"];
+    var values = @Html.Raw(Json.Encode(ViewBag.Report));
+    var data = {
+        labels: xValues,
+        datasets: [{
+            label: "Not Started",
+        /*data: [values.NotStarted, values.InProgress, values.Completed],   */
+            data:[10,50,9],
+            backgroundColor: ['rgba(255, 99, 132, 0.3)', 'rgba(255, 99, 132, 0.3)', 'rgba(255, 99, 132, 0.3)'],
+            borderColor: ['rgba(255,99,132,1)', 'rgba(255,99,132,1)', 'rgba(255,99,132,1)'],
+            borderWidth: 1
+            },
+            {
+                label: "In Progress",
+                data: [12, 4, 20],
+                backgroundColor: ['rgba(255, 206, 86, 0.3)', 'rgba(255, 206, 86, 0.3)', 'rgba(255, 206, 86, 0.3)'],
+                borderColor: ['rgba(255, 206, 86, 1)', 'rgba(255, 206, 86, 1)', 'rgba(255, 206, 86, 1)'],
+                borderWidth: 1
+            },
+            {
+                label: "Completed",
+                data: [11, 2, 10],
+                backgroundColor: ['rgba(75, 192, 192, 0.3)', 'rgba(75, 192, 192, 0.3)', 'rgba(75, 192, 192, 0.3)'],
+                borderColor: ['rgba(75, 192, 192, 1)', 'rgba(75, 192, 192, 1)', 'rgba(75, 192, 192, 1)'],
+                borderWidth: 1
+            }]
+    }
+    var ctx1 = $("#bar-chart");
+    var barChart = new Chart(ctx1, {
+        type: 'bar',
+        data: data,
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            title: { display: false},
+            legend: { display: true },
+            scales: {
+                yAxes: [{
+                    ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'No. Of Requests' }
+                }],
+                xAxes: [{
+                    scaleLabel: { display: true, labelString: 'Client Names' }
+                }]
+            },
+            "hover": {
+                "animationDuration": 0
+            },
+            animation: {
+                duration: 0,
+                onComplete: function () {
+                    var ctx1 = this.chart.ctx;
+                    ctx1.fillStyle = this.chart.config.options.defaultFontColor;
+                    ctx1.textAlign = 'center';
+                    ctx1.textBaseline = 'bottom';
+                    this.data.datasets.forEach(function (dataset) {
+                        for (var i = 0; i < dataset.data.length; i++) {
+                            var model = dataset._meta[Object.keys(dataset._meta)[0]].data[i]._model;
+                            ctx1.fillText(dataset.data[i], model.x, model.y +3);
+                        }
+                    });
+                }
+            }
+        },
+    });
+    var ctx2 = $("#pie-chart");
+    var pieChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: data,
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            title: { display: false },
+            legend: { display: true },           
+        },
+    });
+</script>

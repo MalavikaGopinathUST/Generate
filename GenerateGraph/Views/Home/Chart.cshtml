@@ -1,0 +1,540 @@
+﻿@model IEnumerable<GenerateGraph.Models.UserGraphReport>
+@{
+    ViewBag.Title = "Graph";
+    var report = ViewBag.Report;
+}
+<script src="~/Scripts/Chart.min.js"></script>
+<script src="~/Scripts/chartjs-plugin-labels.js"></script>
+<script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
+<script src="//cdn.datatables.net/tabletools/2.2.4/js/dataTables.tableTools.min.js"></script>
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.min.css" />
+
+<style>
+    .modalReqById-modalBody div {
+        float: left;
+        width: 100%
+    }
+
+        .modalReqById-modalBody div p {
+            float: left;
+            width: 20%;
+            font-weight: 600;
+        }
+
+        .modalReqById-modalBody div span {
+            float: left;
+            width: 80%
+        }
+
+    canvas {
+        width: 650px !important;
+        height: 250px !important;
+    }
+
+    .mycss:hover {
+        background-color: transparent;
+        opacity: 0.5;
+    }
+
+    .jumbotron {
+        width: 800px;
+        height: 570px;
+        position: relative;
+        background-color: lavender;
+    }
+
+    .mycss {
+        width: 50px;
+        height: 50px;
+        background-color: #E6EAFF;
+        border-color: lavender;
+    }
+
+        .mycss:focus {
+            background-color: #9a4eae;
+        }
+
+    #buttonsMenu {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+    }
+
+    #tileTitle {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        color: darkblue;
+        font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        font-size: larger;
+    }
+
+    .graphs {
+        text-align: center;
+        color: darkmagenta;
+    }
+
+    div.container {
+        font-size: smaller;
+    }
+
+    table.dataTable thead th, table.dataTable tbody td {
+        padding: 5px 10px;
+    }
+
+    .graph-thead {
+        text-align: center;
+        background-color: darkblue;
+        color: white;
+    }
+
+    .graph-tbody {
+        text-align: center;
+    }
+</style>
+<br />
+<div class="jumbotron col-md-8">
+    <div id="tileTitle"><p>Request Summary</p></div>
+    <div id="buttonsMenu">
+        <button class="mycss" onmouseover="clickedCol()" id="col-btn"><img src="~/images/column.PNG" alt="column chart" /></button>
+        <button class="mycss" onmouseover="clickedLine()" id="hbar-btn"><img src="~/images/line.png" alt="line chart" /></button>
+        <button class="mycss" onmouseover="clickedPie()" id="pie-btn"><img src="~/images/pie.PNG" alt="pie chart" /></button>
+        <button class="mycss" onmouseover="clickedDoughnut()" id="doughnut-btn"><img src="~/images/doughnut.PNG" alt="doughnut chart" /></button>
+    </div>
+    <div class="inner-div">
+        <div class="graphs" id="col">
+            <h4>Column Graph</h4>
+            <canvas id="barChart"></canvas>
+        </div>
+        <div class="graphs" id="pie">
+            <h4>Pie Graph</h4>
+            <canvas id="pieChart"></canvas>
+        </div>
+        <div class="graphs" id="line">
+            <h4>Line Graph</h4>
+            <div>Choose the year : <select id="ddYear" onchange="generateLineChart()"></select></div>
+            <canvas id="lineChart"></canvas>
+        </div>
+        <div class="graphs" id="doughnut">
+            <h4>Doughnut Graph</h4>
+            <canvas id="doughnutChart"></canvas>
+        </div>
+    </div>
+    <div class="container">
+        <table class="table table-bordered" id="reqDetails">
+            <thead class="graph-thead">
+                <tr>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Id)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.ClientName)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Request)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Status)
+                    </th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="modalReqById" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Request Details</h4>
+            </div>
+            <div class="modal-body modalReqById-modalBody">
+                <div class="Id"><p>Id</p><span></span></div>
+                <div class="ClientName"><p>Client Name</p><span></span></div>
+                <div class="Request"><p>Request</p><span></span></div>
+                <div class="Status"><p>Status</p><span></span></div>
+                <div class="CreatedBy"><p>Created By</p><span></span></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="myModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <a href="#" class="close" data-dismiss="modal">&times;</a>
+                <h3 class="modal-title" id="addAttributeReqLabel">Request Details</h3>
+            </div>
+            <div class="modal-body">
+                <form id="myForm">
+                    <table class="table table-bordered">
+                        <thead class="graph-thead">
+                            <tr>
+                                <th>@Html.DisplayNameFor(model => model.Id)</th>
+                                <th>@Html.DisplayNameFor(model => model.ClientName)</th>
+                                <th>@Html.DisplayNameFor(model => model.Request)</th>
+                                <th>@Html.DisplayNameFor(model => model.Status)</th>
+                                <th>@Html.DisplayNameFor(model => model.CreatedBy)</th>
+                                <th>@Html.DisplayNameFor(model => model.CreatedDate)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="thisPopup" class="graph-tbody"></tbody>
+                    </table>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <a href="Index" class="btn btn-primary" data-dismiss="modal">OK</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var xValues=@Html.Raw(Json.Encode(ViewBag.Status));
+    var yvalues = @Html.Raw(Json.Encode(ViewBag.Count));
+    var data = {
+        labels: xValues,
+        datasets: [{
+            data: yvalues,
+            backgroundColor: ['rgba(255, 99, 132, 0.3)',
+                'rgba(255, 206, 86, 0.3)',
+                'rgba(75, 192, 192, 0.3)'
+            ],
+            borderColor: [
+                'rgba(255,99,132,1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)'
+            ],
+            borderWidth: 1
+        }]
+    }
+    //This is to add space on top of the chart after the scale
+    Chart.plugins.register({
+        id: 'paddingBelowLegends',
+        beforeInit: function (chart, options) {
+            chart.legend.afterFit = function () {
+                this.height = this.height + 15;
+            };
+        }
+    });
+    var ctx1 = $("#barChart");
+    var barChart = new Chart(ctx1, {
+        type: 'bar',
+        data: data,
+        options: {
+            plugins: false,
+            maintainAspectRatio: false,
+            responsive: true,
+            legend: { display: false },
+            scales: {
+                yAxes: [{
+                    ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'No. Of Requests' }
+                }],
+                xAxes: [{
+                    scaleLabel: { display: true, labelString: 'Status' }
+                }]
+            },
+            plugins: {
+                labels: {
+                    render: 'value',
+                    precision: 0,
+                    showZero: true,
+                    fontSize: 12,
+                    position: 'default',
+                    overlap: true
+                }
+            }
+        },
+    });
+    var ctx3 = $("#pieChart");
+    var pieChart = new Chart(ctx3, {
+        type: 'pie',
+        data: data,
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            title: { display: false },
+            legend: { display: true },
+            plugins: {
+                labels: {
+                    render: 'value',
+                    precision: 0,
+                    showZero: true,
+                    fontSize: 20,
+                    position: 'default',
+                    overlap: true
+                }
+            }
+        },
+    });
+    var ctx4 = $("#doughnutChart");
+    var doughnutChart = new Chart(ctx4, {
+        type: 'doughnut',
+        data: data,
+        options: {
+            maintainAspectRatio: false,
+            responsive: true,
+            title: { display: false },
+            legend: { display: true },
+            plugins: {
+                labels: {
+                    render: 'value',
+                    precision: 0,
+                    showZero: true,
+                    fontSize: 20,
+                    arc: false,
+                    position: 'default',
+                    overlap: true
+                }
+            }
+        },
+    });
+    //getting options for year dropdown in line chart
+    $('#ddYear').each(function () {
+        var year = (new Date()).getFullYear();
+        var current = year;
+        year -= 3;
+        for (var i = 0; i <= 3; i++) {
+            if ((year + i) == current)
+                $(this).append('<option selected value="' + (year + i) + '">' + (year + i) + '</option>');
+            else
+                $(this).append('<option value="' + (year + i) + '">' + (year + i) + '</option>');
+        }
+    })
+    // Generating line chart for selected year
+    generateLineChart = function () {
+        var notStartedList = [];
+        var inProgressList = [];
+        var completedList = [];
+        var monthList = [];
+        var selected = document.getElementById("ddYear");
+        var yr = selected.value;
+        var statuses =@Html.Raw(Json.Encode(ViewBag.Status));
+        for (i = 0; i < statuses.length; i++) {
+            $.post(
+                '/Home/GenerateLineChart', {
+                year: yr,
+                status: statuses[i]
+            }, function (res) {
+                $.each(res, function (index, value) {
+                    if (res[index].Status == 'Not Started') {
+                        notStartedList.push(res[index].MonthlyRequests);
+                    } else if (res[index].Status == 'In Progress') {
+                        inProgressList.push(res[index].MonthlyRequests);
+                    } else if (res[index].Status == 'Completed') {
+                        completedList.push(res[index].MonthlyRequests);
+                    }
+                    if (monthList.length < 12) {
+                        monthList.push(res[index].Month);
+                    }
+                });
+            })
+        }
+        var ctx2 = $("#lineChart");
+        var lineChart = new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: monthList,
+                datasets: [
+                    {
+                        lineTension: 0,
+                        label: 'Not started',
+                        data: notStartedList,
+                        backgroundColor: ['rgba(255, 99, 132, 0.3)'],
+                        borderColor: ['rgba(255,99,132,1)'],
+                        borderWidth: 1
+                    },
+                    {
+                        lineTension: 0,
+                        label: 'In Progress',
+                        data: inProgressList,
+                        backgroundColor: ['rgba(255, 206, 86, 0.3)'],
+                        borderColor: ['rgba(255,206, 86,1)'],
+                        borderWidth: 1
+                    },
+                    {
+                        lineTension: 0,
+                        data: completedList,
+                        label: 'Completed',
+                        backgroundColor: ['(75, 192, 192, 0.3)'],
+                        borderColor: ['rgba(50,205,50,1)'],
+                        borderWidth: 1
+                    },
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                // This onClick is for sshowing details of reqs in the month of the year
+                onClick: function (e) {
+                    var activePoints = lineChart.getElementsAtEvent(e);
+                    var firstPoint = activePoints[0];
+                    if (firstPoint !== undefined) {
+                        var mon = lineChart.data.labels[firstPoint._index];
+                        var selected = document.getElementById("ddYear");
+                        var yr = selected.value;
+                        $.post(
+                            '/Home/DetailsByMonth', {
+                            year: yr,
+                            month: mon
+                        }, function (res) {
+                            $('#thisPopup').html(res);
+                            $('#myModal').modal("show");
+                        })
+                    }
+                },
+                legend: { display: true },
+                scales: {
+                    yAxes: [{
+                        ticks: { beginAtZero: true }, scaleLabel: { display: true, labelString: 'No. Of Requests' }
+                    }],
+                    xAxes: [{
+                        scaleLabel: { display: true, labelString: 'Months' }
+                    }]
+                },
+                elements: {
+                    line: {
+                        fill: false
+                    }
+                },
+                hover: {
+                    animationDuration: 0
+                },
+                animation: {
+                    duration: 0,
+                    onComplete: function () {
+                        var chartInstance = this.chart,
+                            ctx2 = chartInstance.ctx;
+                        ctx2.fillStyle = this.chart.config.options.defaultFontColor;
+                        ctx2.font = Chart.helpers.fontString(Chart.defaults.global.defaultFontSize, Chart.defaults.global.defaultFontStyle, Chart.defaults.global.defaultFontFamily);
+                        ctx2.textAlign = 'center';
+                        ctx2.textBaseline = 'bottom';
+
+                        this.data.datasets.forEach(function (dataset, i) {
+                            var meta = chartInstance.controller.getDatasetMeta(i);
+                            meta.data.forEach(function (bar, index) {
+                                var data = dataset.data[index];
+                                ctx2.fillText(data, bar._model.x, bar._model.y - 3);
+                            });
+                        });
+                    }
+                }
+            },
+        });
+    };
+    //getting details by status to populate in popup
+    getDetailsByStatus = function (getStatus) {
+        $.post(
+            '/Home/DetailsByStatus', {
+            status: getStatus
+        }, function (res) {
+            $('#thisPopup').html(res);
+            $('#myModal').modal("show");
+        }
+        )
+    };
+    //for showing details on click
+    $('#barChart').click(function (e) {
+        var activePoints = barChart.getElementsAtEvent(e);
+        var firstPoint = activePoints[0];
+        if (firstPoint !== undefined) {
+            var label = barChart.data.labels[firstPoint._index];
+            getDetailsByStatus(label);
+        }
+    });
+    $('#pieChart').click(function (e) {
+        var activePoints = pieChart.getElementsAtEvent(e);
+        var firstPoint = activePoints[0];
+        if (firstPoint !== undefined) {
+            var label = pieChart.data.labels[firstPoint._index];
+            getDetailsByStatus(label);
+        }
+    });
+    $('#doughnutChart').click(function (e) {
+        var activePoints = doughnutChart.getElementsAtEvent(e);
+        var firstPoint = activePoints[0];
+        if (firstPoint !== undefined) {
+            var label = doughnutChart.data.labels[firstPoint._index];
+            getDetailsByStatus(label);
+        }
+    });
+    $(document).ready(function () {
+        $("#col").show();
+        $("#line").hide();
+        $("#pie").hide();
+        $("#doughnut").hide();
+        FillDetails();
+    });
+    function FillDetails() {
+        $.fn.DataTable.ext.pager.numbers_length = 4;
+        var table = $('#reqDetails').DataTable({
+            dom: 'Bfrtip',
+            pageLength: 5,
+            aaSorting: [],
+            select: {
+                "info": false
+            },
+            ajax: {
+                "url": "/Home/GetRquests",
+                "type": "GET",
+                "datatype": "json"
+            },
+            columns:
+                [
+                    {
+                        "data": "Id", "autoWidth": true,
+                        render: function (Id, type, row) {
+                            return '<div><a onclick="getIdDetails(' + Id + ')">' + Id + '</a>';
+                        }
+                    },
+                    { "data": "ClientName", "autoWidth": true },
+                    { "data": "Request", "autoWidth": true },
+                    { "data": "Status", "autoWidth": true },
+                ],
+        });
+    }
+    // get the full details of req by id
+    getIdDetails = function (i) {
+        $.post(
+            '/Home/GetRquestById', {
+            id: i
+        }, function (res) {
+                $(".Id span").text(res.Id);
+                $(".ClientName span").text(res.ClientName);
+                $(".Request span").text(res.Request);
+                $(".Status span").text(res.Status);
+                $(".CreatedBy span").text(res.CreatedBy);
+                $("#modalReqById").modal("show");
+        }
+        )
+    };
+    function clickedCol() {
+        $("#col").show();
+        $("#line").hide();
+        $("#pie").hide();
+        $("#doughnut").hide();
+    }
+    function clickedLine() {
+        generateLineChart();
+        $("#line").show();
+        $("#col").hide();
+        $("#pie").hide();
+        $("#doughnut").hide();
+    }
+    function clickedPie() {
+        $("#pie").show();
+        $("#col").hide();
+        $("#line").hide();
+        $("#doughnut").hide();
+    }
+    function clickedDoughnut() {
+        $("#doughnut").show();
+        $("#col").hide();
+        $("#line").hide();
+        $("#pie").hide();
+    }
+</script>

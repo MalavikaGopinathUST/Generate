@@ -1,0 +1,95 @@
+create table UserGraphReport
+(
+Id int IDENTITY(1,1) PRIMARY KEY,
+ClientName varchar(max) NOT NULL,
+Request varchar(max) NOT NULL,
+Status varchar(50) NOT NULL,
+CreatedBy int,
+CreatedDate date,
+RqstPrcsStartedBy int,
+RqstPrcsStartDate date,
+CompletedBy int,
+CompletionDate date,
+)
+
+USE [graph]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_Select_AllUserGraphReport]    Script Date: 7/17/2022 4:28:21 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER procedure [dbo].[sp_Select_AllUserGraphReport] as
+begin
+	select * from UserGraphReport order by Status
+end
+
+USE [graph]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_Select_MonthlyReqs]    Script Date: 7/17/2022 4:28:31 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER procedure [dbo].[sp_Select_MonthlyReqs] 
+(@year int= 0)
+as
+begin
+	select  
+		distinct( DateName( month , DateAdd( month , DATEPART(MONTH,CreatedDate) , -1 ) ))
+		as month_name,
+		month(CreatedDate) as month_number ,
+		count (Id) as rqs  
+	from UserGraphReport  
+	where YEAR(CreatedDate)=@year and Id=Id
+	group by   month(CreatedDate)   order by  month_number
+end
+
+USE [graph]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_Select_UserGraphReportById]    Script Date: 7/17/2022 4:34:07 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--Stored Procedure for selecting vaues by id in table 
+ALTER procedure [dbo].[sp_Select_UserGraphReportById] 
+(@Id int= 0)
+as
+begin
+	select * from UserGraphReport where Id = @Id
+end
+
+USE [graph]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_Select_RqsByMonth]    Script Date: 7/17/2022 4:35:49 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+--Stored Procedure for selecting reqs by month & year
+ALTER procedure [dbo].[sp_Select_RqsByMonth]
+(@year int= 0,@mon int=0)
+as
+begin	
+	SELECT Id,ClientName,Request,Status,CreatedBy,CreatedDate 
+	FROM UserGraphReport  
+	WHERE   
+	DATEPART(YEAR, CreatedDate) = @year  
+	AND   
+	DATEPART(MONTH, CreatedDate) = @mon
+end
+
+USE [graph]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_Select_StatusCount]    Script Date: 7/17/2022 4:36:35 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER procedure [dbo].[sp_Select_StatusCount] as
+begin
+	SELECT COUNT([Status]) as Count,[Status]
+	FROM [UserGraphReport]
+	GROUP BY [Status]
+end
